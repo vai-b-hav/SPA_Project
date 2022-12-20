@@ -2,6 +2,7 @@
 title: "Time Series Analysis"
 author: "Ramnath K (22BM6JP99), Vaibhav Goyal (22BM6JP54)"
 date: "`r Sys.Date()`"
+abstract: "This is abract for the project"
 knit: (function(inputFile, encoding) {
       out_dir <- "Report";
       rmarkdown::render(inputFile,

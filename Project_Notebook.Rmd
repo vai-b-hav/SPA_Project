@@ -2,12 +2,13 @@
 title: "Time Series Analysis"
 author: "Ramnath K (22BM6JP99), Vaibhav Goyal (22BM6JP54)"
 date: "`r Sys.Date()`"
+knit: (function(inputFile, encoding) {
+      out_dir <- "Report";
+      rmarkdown::render(inputFile,
+                        encoding=encoding,
+                        output_dir=file.path(dirname(inputFile), out_dir))})
 output: html_document
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 ## R Markdown
 
@@ -27,4 +28,7 @@ You can also embed plots, for example:
 plot(pressure)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot
+```{r}
+
+```

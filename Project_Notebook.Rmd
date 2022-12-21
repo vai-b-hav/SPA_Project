@@ -1,6 +1,6 @@
 ---
 title: "Time Series Analysis"
-author: "Ramnath K (22BM6JP99), Vaibhav Goyal (22BM6JP54)"
+author: "Ramnath K (22BM6JP38), Vaibhav Goyal (22BM6JP54)"
 date: "`r Sys.Date()`"
 abstract: "This is abract for the project"
 knit: (function(inputFile, encoding) {
@@ -43,17 +43,22 @@ library(readxl)
 data <- read_xlsx("./Data/BSE_Small_Cap.xlsx", sheet = 'Data')
 ```
 
-
-```{r datainclude=FALSE}
+```{r include=FALSE}
 flextable::flextable(head(data, 10))
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
 ```{r pressure, echo=FALSE}
-plot(pressure)
+data.ts = ts(data['Value'])
+plot(data.ts, type="b") 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot
+```{r}
+lag1.plot(data.ts,1)
+```
+```{r}
+acf(data.ts, xlim=c(1,20))
+```
+
+```{r}
+pacf(data.ts, xlim=c(1,20))
+```

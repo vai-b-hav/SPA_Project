@@ -38,5 +38,10 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
-#Output Folder
+# Output Folder
 Report/
+
+# Any document Output
+*.docx
+*.pdf
+*.html

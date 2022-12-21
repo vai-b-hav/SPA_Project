@@ -8,8 +8,21 @@ knit: (function(inputFile, encoding) {
       rmarkdown::render(inputFile,
                         encoding=encoding,
                         output_dir=file.path(dirname(inputFile), out_dir))})
-output: html_document
+output:
+  word_document: default
 ---
+
+---
+# Data is fetched from the Data subfolder.
+# Knitted Output of the notebook will be stored in the Report subfolder.
+# Flextable library is used to generate tables for word
+
+# ```{r}
+# library(flextable)
+# ```
+
+---
+
 ***
 
 # Initial Setup
@@ -27,11 +40,12 @@ library(readxl)
 ### Import Data
 
 ```{r data import}
-data <- read_xlsx("./Data/22BM6JP54_BSE_Small_Cap.xlsx", sheet = 'Data')
+data <- read_xlsx("./Data/BSE_Small_Cap.xlsx", sheet = 'Data')
 ```
 
-```{r}
-print(head(data, 10))
+
+```{r datainclude=FALSE}
+flextable::flextable(head(data, 10))
 ```
 
 ## Including Plots

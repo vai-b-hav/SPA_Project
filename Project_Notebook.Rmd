@@ -16,11 +16,6 @@ output:
 # Data is fetched from the Data subfolder.
 # Knitted Output of the notebook will be stored in the Report subfolder.
 # Flextable library is used to generate tables for word
-
-# ```{r}
-# library(flextable)
-# ```
-
 ---
 
 ***

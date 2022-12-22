@@ -13,9 +13,11 @@ output:
 ---
 
 ---
+
 # Data is fetched from the Data subfolder.
 # Knitted Output of the notebook will be stored in the Report subfolder.
 # Flextable library is used to generate tables for word
+
 ---
 
 ***
@@ -35,16 +37,25 @@ library(readxl)
 ### Import Data
 
 ```{r data import}
-data <- read_xlsx("./Data/BSE_Small_Cap.xlsx", sheet = 'Data')
+data <- read_xlsx("./Data/US_MRTS.xlsx", sheet = 'Sales')
+colnames(data)[3] <- 'Sales'
 ```
 
 ```{r include=FALSE}
 flextable::flextable(head(data, 10))
 ```
 
-```{r pressure, echo=FALSE}
-data.ts = ts(data['Value'])
-plot(data.ts, type="b") 
+```{r pressure, echo=FALSE, fig.width=9, fig.height=6}
+data.ts = ts(data['Sales'])
+plot(data.ts, type="o", pch = 20) 
+abline(v = 200, col = 'red', lty = 2)
+abline(v = 250, col = 'red', lty = 2)
+abline(v = 335, col = 'blue', lty = 2)
+abline(v = 350, col = 'blue', lty = 2)
+```
+
+```{r outliers}
+print(n= 100, data[c(200:250, 335:350),])
 ```
 
 ```{r}

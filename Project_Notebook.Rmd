@@ -8,63 +8,103 @@ knit: (function(inputFile, encoding) {
       rmarkdown::render(inputFile,
                         encoding=encoding,
                         output_dir=file.path(dirname(inputFile), out_dir))})
-output:
-  word_document: default
+output: word_document
 ---
 
 ---
-
 # Data is fetched from the Data subfolder.
 # Knitted Output of the notebook will be stored in the Report subfolder.
 # Flextable library is used to generate tables for word
-
 ---
 
 ***
 
 # Initial Setup
 
-### Import Libraries:
+#### Import Libraries:
 
 1.  *astsa* - for Time Series Analysis
-    i.
 2.  *readxl* - for importing data from Excel file
+
 ```{r lib import}
 library(astsa)
 library(readxl)
 ```
 
-### Import Data
+```{r output setup, echo=FALSE}
+# Flextable imported to create tables in output file
+library(flextable)
+# Table caption set to bottom
+knitr::opts_chunk$set(tab.topcaption = FALSE)
+# Avoid scientific notations in the plots
+options(scipen = 999)
+```
 
+
+#### Import Data
 ```{r data import}
-data <- read_xlsx("./Data/US_MRTS.xlsx", sheet = 'Sales')
+data <- read_xlsx("./Data/US_MRTR.xlsx", sheet = 'Sales')
+```
+```{r table code, echo=FALSE}
+ft <- 
+  flextable(head(data)) |>
+  set_table_properties(layout = "autofit") |>
+  set_caption(caption = "Sample from data") |>
+  colformat_num(j = 'Year', big.mark = "")
+ft
+```
+
+Before proceeding, let us perform some minor transformations:
+
+1.  Change name of the sales column for easier reference.
+2.  Change unit of the sales from Millions to Billions.
+
+```{r data tansform}
 colnames(data)[3] <- 'Sales'
+data$Sales <- data$Sales / 1000 # To change scale from $ Millions to $ Billions
 ```
 
-```{r include=FALSE}
-flextable::flextable(head(data, 10))
+```{r table_2 code, echo=FALSE}
+ft <- 
+  flextable(head(data)) |>
+  set_table_properties(layout = "autofit") |>
+  set_caption(caption = "Sample from data after transformations") |>
+  colformat_num(j = 'Year', big.mark = "")
+ft
+```
+# Analysis
+#### Define time series
+The *ts()* function from the *astsa* helps us define an indexed time series from out sales data.\
+Sometimes when plotting the data, it is helpful to have the actual time intervals on the on the axis, for this purpose we also create a time series indexed by the time intervals *(sales.ts in the below code)*.
+```{r ts}
+sales <- ts(data = data$Sales)
+sales.ts <- ts(data = data$Sales, frequency = 12, start = c(1992,1))
+```
+#### Plot time series
+```{r plot, echo=FALSE, fig.width=9, fig.height=6}
+plot(sales.ts, type="o", pch = 20, ylab = "Sales (in $ 'B)", main = "Monthly New Car Sales in US [Jan 1992 - Oct 2022]")
+rect(xleft=2008,xright = 2010, ybottom = par("usr")[3], ytop=par("usr")[4], density=10, col = "red")
+rect(xleft=2020,xright = 2021, ybottom = par("usr")[3], ytop=par("usr")[4], density=10, col = "blue")
+
 ```
 
-```{r pressure, echo=FALSE, fig.width=9, fig.height=6}
-data.ts = ts(data['Sales'])
-plot(data.ts, type="o", pch = 20) 
-abline(v = 200, col = 'red', lty = 2)
-abline(v = 250, col = 'red', lty = 2)
-abline(v = 335, col = 'blue', lty = 2)
-abline(v = 350, col = 'blue', lty = 2)
-```
+On plotting the time series data, we observe a clear increasing trend and a seasonality in the data.
 
-```{r outliers}
-print(n= 100, data[c(200:250, 335:350),])
-```
+We observe a departure from the general trend for the years 2008 to 2010 which may be attributed to the global economic crisis of 2008. *(Highlighted in red region in the above plot)*
 
+We also observe a sharp drop in the sales in the years 2020 to 2021 which can be attributed to the CoVID-19 pandemic. *(Highlighted in blue region in the above plot)*
+
+For our initial initial analysis, we will ignore these two anomalies and proceed with the data as is.
+
+#### AR(1) Model
+Since there is upward trend, we first need to make it stationary to fit an AR(1) model. To create a (possibly) stationary series, we’ll examine the first differences $y_t = x_t - x_{t-1}$.
 ```{r}
-lag1.plot(data.ts,1)
+lag1.plot(sales,1)
 ```
-```{r}
-acf(data.ts, xlim=c(1,20))
+```{r, echo=FALSE, fig.width=9, fig.height=6}
+acf(sales)
 ```
 
-```{r}
-pacf(data.ts, xlim=c(1,20))
+```{r, echo=FALSE, fig.width=9, fig.height=6}
+pacf(sales, main = 'New Car Sales')
 ```

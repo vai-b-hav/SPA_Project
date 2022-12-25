@@ -2,7 +2,7 @@
 title: "Time Series Analysis"
 author: "Ramnath K (22BM6JP38), Vaibhav Goyal (22BM6JP54)"
 date: "`r Sys.Date()`"
-abstract: "This is abract for the project"
+abstract: "This a project as part of our course Stochastic Process and Application at ISI, Kolkata. We will be analysing the time series data of new cars sales in USA from January 1992 to October 2022. The end goal of the project would be to be able to fit a suitable time series model and predict values for certain period. The repository for this project can be found at https://github.com/vai-b-hav/SPA_Project"
 knit: (function(inputFile, encoding) {
       out_dir <- "Report";
       rmarkdown::render(inputFile,
@@ -14,7 +14,6 @@ output: word_document
 ---
 # Data is fetched from the Data subfolder.
 # Knitted Output of the notebook will be stored in the Report subfolder.
-# Flextable library is used to generate tables for word
 ---
 
 ***
@@ -22,6 +21,8 @@ output: word_document
 # Initial Setup
 
 #### Import Libraries:
+
+We need to import the following libraries for the project:
 
 1.  *astsa* - for Time Series Analysis
 2.  *readxl* - for importing data from Excel file
@@ -31,7 +32,7 @@ library(astsa)
 library(readxl)
 ```
 
-```{r output setup, echo=FALSE}
+```{r output setup, include=FALSE}
 # Flextable imported to create tables in output file
 library(flextable)
 # Table caption set to bottom
@@ -61,7 +62,7 @@ Before proceeding, let us perform some minor transformations:
 
 ```{r data tansform}
 colnames(data)[3] <- 'Sales'
-data$Sales <- data$Sales / 1000 # To change scale from $ Millions to $ Billions
+data$Sales <- data$Sales / 1000 # Change scale from Millions to Billions
 ```
 
 ```{r table_2 code, echo=FALSE}
@@ -72,9 +73,13 @@ ft <-
   colformat_num(j = 'Year', big.mark = "")
 ft
 ```
+
 # Analysis
+
 #### Define time series
-The *ts()* function from the *astsa* helps us define an indexed time series from out sales data.\
+
+The *ts()* function from the *astsa* helps us define an indexed time series from out sales data.
+
 Sometimes when plotting the data, it is helpful to have the actual time intervals on the on the axis, for this purpose we also create a time series indexed by the time intervals *(sales.ts in the below code)*.
 ```{r ts}
 sales <- ts(data = data$Sales)
@@ -96,15 +101,64 @@ We also observe a sharp drop in the sales in the years 2020 to 2021 which can be
 
 For our initial initial analysis, we will ignore these two anomalies and proceed with the data as is.
 
-#### AR(1) Model
+## AR(1) Model
+
 Since there is upward trend, we first need to make it stationary to fit an AR(1) model. To create a (possibly) stationary series, we’ll examine the first differences $y_t = x_t - x_{t-1}$.
+
 ```{r}
-lag1.plot(sales,1)
-```
-```{r, echo=FALSE, fig.width=9, fig.height=6}
-acf(sales)
+sales.diff <- diff(sales, 1)
 ```
 
+The time series plot of the first differences is as follows:
+
 ```{r, echo=FALSE, fig.width=9, fig.height=6}
-pacf(sales, main = 'New Car Sales')
+plot(sales.diff, type="o", pch = 20,
+     ylab = expression("Sales"["t"]~-~"Sales"["t-1"]),
+     xlab = "Index",
+     main = "Time Series Plot of Sales Differences")
 ```
+
+And, the following plot is the sample estimate of the autocorrelation function of 1st differences:
+
+```{r, echo=FALSE, fig.width=9, fig.height=6}
+acf(sales.diff,xlim=c(1,24))
+```
+
+In the ACF plot we observe that there are multiple lag values that have significant ACFs. Thus an AR(1) model will not be a suitable choice for this data.
+
+If we still consider having a look at the plots of the AR(1) model, they would be as follows:
+
+```{r, echo=FALSE, fig.width=9, fig.height=5}
+sales.diff.lag1 <- lag(sales.diff,-1)
+y <- cbind(sales.diff,sales.diff.lag1)
+ar1.sales.diff <- lm(y[,1] ~ y[,2])
+par(mfrow=c(1,3))
+plot(y[,2], y[,1],
+     main = 'AR(1) of Sales Differences',
+     xlab = "Sales Differnce (t-1)",
+     ylab = "Sales Differnce (t)")
+abline(ar1.sales.diff, col = 'red')
+plot(ar1.sales.diff$fit,ar1.sales.diff$residuals,
+     main = 'Residual Plot',
+     xlab = 'Fitted Value',
+     ylab = 'Residual')
+acf(ar1.sales.diff$residuals, xlim = c(1,24), main = '')
+title(main = 'ACF of Residuals', line = 0.5)
+```
+
+From the first scatter plot and the residual plot, we can clearly see that AR(1) model is not a good fit. Also, from the ACF plot, it is evident that the residuals still have significant auto-correlation.  
+
+## ARIMA Model
+
+Since we have a monthly data that exhibits seasonality, we will use of 12, i.e., ${\nabla_{12}x_{t} = x_t - x_{t-1}}$. The idea is that differences from the previous year may be, on average, about the same for each month of a year
+```{r}
+sales.diff.12 <- diff(sales, 12)
+plot(sales.diff.12)
+acf(sales.diff)
+acf(sales.diff.12)
+pacf(sales.diff)
+pacf(sales.diff.12, xlim = c(1,50))
+```
+
+
+

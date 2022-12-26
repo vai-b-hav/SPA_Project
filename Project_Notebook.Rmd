@@ -87,7 +87,9 @@ sales.ts <- ts(data = data$Sales, frequency = 12, start = c(1992,1))
 ```
 #### Plot time series
 ```{r plot, echo=FALSE, fig.width=9, fig.height=6}
-plot(sales.ts, type="o", pch = 20, ylab = "Sales (in $ 'B)", main = "Monthly New Car Sales in US [Jan 1992 - Oct 2022]")
+plot(sales.ts, type="o", pch = 20,
+     ylab = "Sales (in $ 'B)",
+     main = "Monthly New Car Sales in US [Jan 1992 - Oct 2022]")
 rect(xleft=2008,xright = 2010, ybottom = par("usr")[3], ytop=par("usr")[4], density=10, col = "red")
 rect(xleft=2020,xright = 2021, ybottom = par("usr")[3], ytop=par("usr")[4], density=10, col = "blue")
 
@@ -150,7 +152,7 @@ From the first scatter plot and the residual plot, we can clearly see that AR(1)
 
 ## SARIMA Model
 
-Since we have a monthly data that exhibits seasonality, we should first observe the plot for -
+Since we have a monthly data that exhibits seasonality, we should first observe the plot for
 $${Z_{t} = \nabla_{12}x_{t} = x_t - x_{t-12}}$$
 The idea is that differences from the previous year may be, on average, about the same for each month of a year.
 
@@ -168,41 +170,126 @@ plot(sales.diff.12, type = 'o', pch = 20,
 
 Here we see that the data has been de-trended, thus, further differencing is not necessary.
 
-Since we have kept the data of 2008 economic crisis as well as the CoVID-19 pandemic, we see there are a lot of outliers in the plot. We will still try to fit a SARIMA model. For the identification of the SARIMA model, we need to have a look at the ACF and PACF plot of the detrended series. 
+Since we have kept the data of 2008 economic crisis as well as the CoVID-19 pandemic, we see there are a lot of outliers in the plot. We will still try to fit a SARIMA model. For the identification of the SARIMA model, we need to have a look at the ACF and PACF plot of the de-trended series. 
 
 ```{r ,results='hide',fig.width=9, fig.height=6}
 acf2(sales.diff.12,48)
 ```
-Based on this let us try to 
+
+Based on the above plots let us try to identify the suitable model:\
+**Non-seasonal component**\
+We notice that ACF for early lags are tapering and there are spikes in the early lags of PACF.This indicates that the non seasonal component could be an AR(1) or an AR(2).
+
+**Seasonal component**\
+We notice that the PACFs for lags that are multiple of 12 are tapering and there are no significant for their ACFs. Thus the seasonal component at best could be either MA(1) or MA(2) along with a first order differencing.
+
+Based on these observations, we can try the following models-
+
+|        ${ARIMA(1,0,0)\times(0,1,1)_{12}}$
+|        ${ARIMA(2,0,0)\times(0,1,1)_{12}}$
+|        ${ARIMA(1,0,0)\times(0,1,2)_{12}}$
+|        ${ARIMA(2,0,0)\times(0,1,1)_{12}}$
+
+Of these, we find that the best fit model is $ARIMA(2,0,0)~\times~(0,1,1)$ with an AIC of 1956.02.
+
+Following plots can further help us asses the appropriateness of this model: 
+```{r, results='hide', fig.width=9, fig.height=6}
+sarima(sales, 2,0,0, 0,1,1,12)
+```
+
+We can clearly see that that all the p values for the Ljung-Box statistic for all the lags are significant. This shows that the model is not a good fit.
+
+One of the main cause for the problems we are facing while fitting the model could be that we have until now taken to whole series from Jan 1992 to Oct 2022 which also includes data from the period of 2008 economic recession and the CoVID-19 pandemic.
+
+## SARIMA Model on a subset of data
+
+For the purpose of understanding the concepts we can take subset of data from January 2010 to December 2019. From this we can then fit a model on Jan 2010 to Dec 2017, forecast the sales for Jan 2018 to Dec 2019 and use the actaul data from that period to very our results.
+
 
 ```{r}
-sales.sarima <- sarima(sales, 2,0,0,0,1,1,12)
+sales10to17 <- ts(data$Sales[217:312])
+sales18to19 <- ts(data$Sales[313:337])
 
-sales.sarima$ttable
+# Also creating ts with actual time intervals for plots later. 
+sales10to17.ts <- ts(data$Sales[217:312], frequency = 12, start = c(2010,1))
+sales18to19.ts <- ts(data$Sales[313:337], frequency = 12, start = c(2018,1))
 ```
+
+Let us now have a look at the data we have.
+
+```{r, echo=FALSE, fig.width=9, fig.height=6}
+plot(sales10to17.ts, type = "o", pch = 20,
+     ylab = "Sales (in $ 'B)",
+     main = "Monthly New Car Sales in US [Jan 2010 - Dec 2017]")
+```
+
+Now, we should again start our analysis for identifying the SARIMA model by first performing the differencing- $\nabla_{12}x_t$.
 
 ```{r}
-trial <- ts(data$Sales[217:337])
-#trial <- ts(data$Sales[1:193])
-plot(trial)
-trial.diff.12 <- diff(trial, 12)
-plot(trial.diff.12)
-trial.diff.12.1 <- diff(trial.diff.12, 1)
-plot(trial.diff.12.1)
-acf2(trial.diff.12.1, 48)
-#sarima(trial, 0,0,1,1,1,0,12)
-sarima(trial, 0,1,1,0,1,0,12)
+sales10to17.diff.12 <- diff(sales10to17, 12)
+```
+```{r, echo=FALSE, fig.width=9, fig.height=6}
+plot(sales10to17.diff.12, type = "o", pch = 20,
+     ylab = expression("Sales"["t"]~-~"Sales"["t-12"]),
+     xlab = 'Index',
+     main = "Time Series Plot of Sales Differences")
 ```
 
+We see that this still have a downward trend in the data, we should thus consider performing another differencing - $\nabla_{1}x_t$.
 
-```{r, fig.width=30, fig.height=10}
-# sarima.for(trial, 24, 0,1,1,0,1,1,12)
-trial.ts <- ts(data = data$Sales[217:337], frequency = 12, start = c(2010,1))
-trial2.ts <- ts(data = data$Sales[217:312], frequency = 12, start = c(2010,1))
-trial3.ts <- ts(data = data$Sales[313:337], frequency = 12, start = c(2018,1))
-sarima.for(trial2.ts, 25,0,1,1,0,1,0,12)
-lines(trial3.ts, lty = 2, col = 'blue')
+```{r}
+sales10to17.diff.12.1 <- diff(sales10to17.diff.12, 1)
 ```
 
+```{r, echo=FALSE, fig.width=9, fig.height=6}
+plot(sales10to17.diff.12.1, type = "o", pch = 20,
+     ylab = expression("Z"["t"]~-~"Z"["t-1"]),
+     xlab = 'Index',
+     main = "Time Series Plot of Sales Differences")
+```
 
+The series now appears to be somewhat stationary. We should now have a look at the ACFs and the PACFs.
+```{r, results='hide'}
+acf2(sales10to17.diff.12.1, 48)
+```
 
+Based on the above plots let us try to identify the suitable model:\
+**Non-seasonal component**\
+We notice that PACF for early lags are tapering and there are spikes in the early lags of ACF.This indicates that the non seasonal component could be an MA(1) or an MA(2) along with a first order differencing.
+
+**Seasonal component**\
+We notice that the neither tha ACFs nor the PACFs for lags that are multiple of 12 are significant for their ACFs. Thus the seasonal component has nothing apart from a first order differencing.
+
+Thus the models that we can try are-
+|        ${ARIMA(0,1,1)\times(0,1,0)_{12}}$
+|        ${ARIMA(0,1,2)\times(0,1,0)_{12}}$
+
+Of these, we find that the first model has a lower AIC of 354.34. Also the p value for the second MA term in the second model is more than 0.05 it is therefore not significant. Thus we finally pick the model- ${ARIMA(0,1,1)\times(0,1,0)_{12}}$.
+
+Following plots can further help us asses the appropriateness of this model: 
+```{r, results='hide', fig.width=9, fig.height=6}
+sarima(sales10to17, 0,1,1, 0,1,0, 12)
+```
+
+We can see that the value of standardized residual is low; the ACFs of residuals are also not significant; the Q-Q plot indicates good fit; and, the p values for the Ljung-Box statistics are greater than 0.05 for all the lags. Thus we can conclude that the model is a good fit.
+
+Let us now forecast data for 2018 and 2019 using this model.
+```{r, results='hide',fig.width=24, fig.height=10}
+sarima.for(sales10to17.ts, 25, 0,1,1, 0,1,0, 12, pch = 20, lwd = 2)
+```
+
+We can also overlay the actual values to assess the accuracy of our forecasts.
+
+```{r, results='hide',echo = FALSE,fig.width=24, fig.height=10}
+sarima.for(sales10to17.ts, 25, 0,1,1, 0,1,0, 12, pch = 20, lwd = 2)
+lines(sales18to19.ts, lwd = 2, lty = 2, col = 'midnightblue', type="o", pch = 4)
+legend('topleft'
+       , legend=c("Time Series", "Forecast", "Actual Value")
+       , pch = c(20, 20, 4)
+       , lty = c(1, 1, 2)
+       , lwd = c(2, 2, 2)
+       , col=c("black", "red", 'midnightblue')
+       , cex = 1.5)
+```
+
+From the plot we can see that the actual values for most of the month are within 1 or 2 standard error of the forecast.

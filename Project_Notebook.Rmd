@@ -148,16 +148,60 @@ title(main = 'ACF of Residuals', line = 0.5)
 
 From the first scatter plot and the residual plot, we can clearly see that AR(1) model is not a good fit. Also, from the ACF plot, it is evident that the residuals still have significant auto-correlation.  
 
-## ARIMA Model
+## SARIMA Model
 
-Since we have a monthly data that exhibits seasonality, we will use of 12, i.e., ${\nabla_{12}x_{t} = x_t - x_{t-1}}$. The idea is that differences from the previous year may be, on average, about the same for each month of a year
+Since we have a monthly data that exhibits seasonality, we should first observe the plot for -
+$${Z_{t} = \nabla_{12}x_{t} = x_t - x_{t-12}}$$
+The idea is that differences from the previous year may be, on average, about the same for each month of a year.
+
 ```{r}
 sales.diff.12 <- diff(sales, 12)
-plot(sales.diff.12)
-acf(sales.diff)
-acf(sales.diff.12)
-pacf(sales.diff)
-pacf(sales.diff.12, xlim = c(1,50))
+```
+
+
+```{r, echo=FALSE, fig.width=9, fig.height=6}
+plot(sales.diff.12, type = 'o', pch = 20,
+     ylab = expression("Sales"["t"]~-~"Sales"["t-12"]),
+     xlab = 'Index',
+     main = "Time Series Plot of Sales Differences")
+```
+
+Here we see that the data has been de-trended, thus, further differencing is not necessary.
+
+Since we have kept the data of 2008 economic crisis as well as the CoVID-19 pandemic, we see there are a lot of outliers in the plot. We will still try to fit a SARIMA model. For the identification of the SARIMA model, we need to have a look at the ACF and PACF plot of the detrended series. 
+
+```{r ,results='hide',fig.width=9, fig.height=6}
+acf2(sales.diff.12,48)
+```
+Based on this let us try to 
+
+```{r}
+sales.sarima <- sarima(sales, 2,0,0,0,1,1,12)
+
+sales.sarima$ttable
+```
+
+```{r}
+trial <- ts(data$Sales[217:337])
+#trial <- ts(data$Sales[1:193])
+plot(trial)
+trial.diff.12 <- diff(trial, 12)
+plot(trial.diff.12)
+trial.diff.12.1 <- diff(trial.diff.12, 1)
+plot(trial.diff.12.1)
+acf2(trial.diff.12.1, 48)
+#sarima(trial, 0,0,1,1,1,0,12)
+sarima(trial, 0,1,1,0,1,0,12)
+```
+
+
+```{r, fig.width=30, fig.height=10}
+# sarima.for(trial, 24, 0,1,1,0,1,1,12)
+trial.ts <- ts(data = data$Sales[217:337], frequency = 12, start = c(2010,1))
+trial2.ts <- ts(data = data$Sales[217:312], frequency = 12, start = c(2010,1))
+trial3.ts <- ts(data = data$Sales[313:337], frequency = 12, start = c(2018,1))
+sarima.for(trial2.ts, 25,0,1,1,0,1,0,12)
+lines(trial3.ts, lty = 2, col = 'blue')
 ```
 
 
